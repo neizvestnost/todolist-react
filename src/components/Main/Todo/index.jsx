@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import TodoList from './TodoList';
 import Footer from './Footer';
-import { BrowserRouter as Router, Route } from "react-router-dom";
+import { Route } from "react-router-dom";
 
 export default class Todo extends Component {
   state = {
@@ -18,27 +18,25 @@ export default class Todo extends Component {
     const todoListLength = todoList.length
 
     return (
-      <Router>
-        <>
-          <div>
-            <header>todos</header>
-            <input placeholder='What needs to be done' value={inputValue} onKeyPress={this.keyPressHandle} onChange={this.handleOnChange} />
-            {todoListLength ? <input type='checkbox' checked={selectAllChecked} onChange={this.handleSelectAll} /> : ''}
-          </div>
-          <section>
-            <Route exact path='/' render={props => this.allTodos(props)} />
-            <Route path='/active' render={props => this.activeTodos(props)} />
-            <Route path='/complete' render={props => this.completeTodos(props)} />
-          </section>
-          {todoListLength ?
-            <Footer
-              itemsLeft={activeTodosLength}
-              todoListLength={todoListLength}
-              deleteCompleted={this.deleteCompleted}
-              completedTodos={completedTodos}
-            /> : ''}
-        </>
-      </Router>
+      <>
+        <div>
+          <header>todos</header>
+          <input placeholder='What needs to be done' value={inputValue} onKeyPress={this.keyPressHandle} onChange={this.handleOnChange} />
+          {todoListLength ? <input type='checkbox' checked={selectAllChecked} onChange={this.handleSelectAll} /> : ''}
+        </div>
+        <section>
+          <Route exact path='/todo' render={props => this.allTodos(props)} />
+          <Route path='/todo/active' render={props => this.activeTodos(props)} />
+          <Route path='/todo/complete' render={props => this.completeTodos(props)} />
+        </section>
+        {todoListLength ?
+          <Footer
+            itemsLeft={activeTodosLength}
+            todoListLength={todoListLength}
+            deleteCompleted={this.deleteCompleted}
+            completedTodos={completedTodos}
+          /> : ''}
+      </>
     )
   }
 
