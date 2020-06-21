@@ -1,18 +1,20 @@
 import React, { Component } from 'react';
-import TodoList from './TodoList';
 import Footer from './Footer';
 import { Route } from "react-router-dom";
+import { connect } from 'react-redux'
+import { addTodo, selectAllTodos } from '../../../actions/todos'
+import TodoList from './TodoList'
 
-export default class Todo extends Component {
+class Todo extends Component {
   state = {
     inputValue: '',
     position: 1,
-    todoList: [],
     selectAllChecked: false
   }
 
   render() {
-    const { todoList, inputValue, selectAllChecked } = this.state;
+    const { todoList } = this.props;
+    const { inputValue, selectAllChecked } = this.state;
     const activeTodosLength = todoList.filter(todo => todo.active).length
     const completedTodos = todoList.filter(todo => !todo.active)
     const todoListLength = todoList.length
@@ -21,13 +23,13 @@ export default class Todo extends Component {
       <>
         <div>
           <header>todos</header>
-          <input placeholder='What needs to be done' value={inputValue} onKeyPress={this.keyPressHandle} onChange={this.handleOnChange} />
+          <input placeholder='What needs to be done' value={inputValue} onKeyPress={e => this.keyPressHandle(e, this.props.addTodo)} onChange={this.handleOnChange} />
           {todoListLength ? <input type='checkbox' checked={selectAllChecked} onChange={this.handleSelectAll} /> : ''}
         </div>
         <section>
           <Route exact path='/todo' render={props => this.allTodos(props)} />
           <Route path='/todo/active' render={props => this.activeTodos(props)} />
-          <Route path='/todo/complete' render={props => this.completeTodos(props)} />
+          <Route path='/todo/complete' render={props => this.completedTodos(props)} />
         </section>
         {todoListLength ?
           <Footer
@@ -40,152 +42,58 @@ export default class Todo extends Component {
     )
   }
 
+  allTodos = props => <TodoList {...props} type={'all'} />
+  activeTodos = props => <TodoList {...props} type={'active'} />
+  completedTodos = props => <TodoList {...props} type={'completed'} />
+
+
   deleteCompleted = idsToDelete => {
     this.setState(prevState => {
       const newTodoList = prevState.todoList.filter(todo => !idsToDelete.includes(todo.position))
-      return (
-        {
-          todoList: newTodoList
-        }
-      )
+      return { todoList: newTodoList }
     })
   }
 
   handleSelectAll = () => {
     this.setState(prevState => {
-      const selectedTodos = prevState.todoList.map(todo => {
-        prevState.selectAllChecked ? todo.active = true : todo.active = false
-        return todo
-      })
-
-      return (
-        {
-          selectAllChecked: !prevState.selectAllChecked,
-          todoList: selectedTodos
-        }
-      )
+      return { selectAllChecked: !prevState.selectAllChecked }
     })
-  }
 
-  activeTodos = props => {
-    const activeTodos = this.state.todoList.filter(todo => todo.active)
+    const { todoList, selectAllTodos } = this.props
 
-    return (
-      <TodoList
-        {...props}
-        data={activeTodos}
-        handleTextChange={this.handleTodoTextChange}
-        handleActiveClick={this.handleActiveClick}
-        handleCancelClick={this.handleCancelClick}
-      />
-    )
-  }
-
-  allTodos = props => (
-    <TodoList
-      {...props}
-      data={this.state.todoList}
-      handleTextChange={this.handleTodoTextChange}
-      handleActiveClick={this.handleActiveClick}
-      handleCancelClick={this.handleCancelClick}
-    />
-  )
-
-  completeTodos = props => {
-    const completeTodos = this.state.todoList.filter(todo => !todo.active)
-
-    return (
-      <TodoList
-        {...props}
-        data={completeTodos}
-        handleTextChange={this.handleTodoTextChange}
-        handleActiveClick={this.handleActiveClick}
-        handleCancelClick={this.handleCancelClick}
-      />
-    )
-  }
-
-  handleTodoTextChange = (position, text) => {
-    this.setState(prevState => {
-      const newTodoList = prevState.todoList.map(todo => {
-        if (todo.position === position) {
-          return (
-            {
-              text: text,
-              position: todo.position,
-              active: todo.active
-            }
-          )
-        }
-
-        return todo
-      })
-
-      return (
-        {
-          todoList: newTodoList
-        }
-      )
+    const selectedTodos = todoList.map(todo => {
+      return this.state.selectAllChecked ? { ...todo, active: true } : { ...todo, active: false }
     })
+
+    selectAllTodos(selectedTodos)
   }
 
-  keyPressHandle = event => {
+  keyPressHandle = (event, creator) => {
     if (event.key === 'Enter' && this.state.inputValue.length) {
       this.setState(prevState => {
-        return (
-          {
-            position: prevState.position + 1,
-            todoList: prevState.todoList.concat(
-              {
-                text: this.state.inputValue,
-                position: this.state.position,
-                active: true
-              }
-            ),
-            inputValue: '',
-            selectAllChecked: false
-          }
-        )
+        return {
+          inputValue: '',
+          position: prevState.position + 1,
+          selectAllChecked: false
+        }
       })
+
+      return creator(this.state.inputValue, this.state.position)
     }
   }
 
-  handleActiveClick = (flag, position) => {
-    this.setState(prevState => {
-      const newTodoList = prevState.todoList.map(todo => {
-        if (todo.position === position) {
-          return (
-            {
-              text: todo.text,
-              position: position,
-              active: !flag
-            }
-          )
-        }
-        return todo;
-      })
+  handleOnChange = event => this.setState({ inputValue: event.target.value })
+}
 
-      return (
-        {
-          todoList: newTodoList
-        }
-      )
-    })
-  }
+const mapDispatchToProps = {
+  addTodo,
+  selectAllTodos
+}
 
-  handleCancelClick = position => {
-    this.setState(prevState => {
-      return (
-        {
-          todoList: prevState.todoList.filter(todo => todo.position !== position)
-        }
-      )
-    })
-  }
-
-  handleOnChange = event => {
-    return (
-      this.setState({ inputValue: event.target.value })
-    )
+const mapStateToProps = state => {
+  return {
+    todoList: state.todos.todoList
   }
 }
+
+export default connect(mapStateToProps, mapDispatchToProps)(Todo)
